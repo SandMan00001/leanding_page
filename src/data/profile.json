@@ -1,0 +1,26 @@
+{
+  "skills": {
+    "infrastructure": ["Terraform", "Kubernetes", "AWS", "ArgoCD", "Docker", "Linux", "GitOps"],
+    "security": ["ISO 27001", "GDPR", "Ethical Hacking", "System Audit"]
+  },
+  "experience": [
+    {
+      "role": "DevOps Engineer",
+      "company": "beSharp",
+      "duration": "Presente",
+      "description": "Progettazione e manutenzione di infrastrutture cloud-native. Implementazione di workflow GitOps e garanzia di alta affidabilità per sistemi mission-critical."
+    },
+    {
+      "role": "Tech Educator",
+      "company": "Coding Giants",
+      "duration": "",
+      "description": "Traduzione di concetti di programmazione complessi in moduli facilmente comprensibili per gli studenti. Promozione della prossima generazione di talenti tecnici."
+    },
+    {
+      "role": "Amministratore di Sistema",
+      "company": "Comelz",
+      "duration": "",
+      "description": "Gestione dell'infrastruttura IT interna, ottimizzazione delle prestazioni di rete e applicazione dei protocolli di sicurezza di base in tutta l'organizzazione."
+    }
+  ]
+}
