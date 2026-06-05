@@ -13,6 +13,7 @@ interface Repo {
 function App() {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetch('https://api.github.com/users/SandMan00001/repos?sort=updated&per_page=6')
@@ -52,14 +53,29 @@ function App() {
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#skills">Competenze</a>
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#contact">Contatti</a>
           </div>
-          <a className="hidden md:inline-flex bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container" href="#contact">
-            Curriculum
+          <a className="hidden md:inline-flex bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container" href={cvPdfUrl} target="_blank" rel="noopener noreferrer">
+            <span className="material-symbols-outlined text-[18px]">download</span> Curriculum
           </a>
           {/* Mobile Menu Button */}
-          <button className="md:hidden text-on-surface p-2 focus:outline-none">
-            <span className="material-symbols-outlined">menu</span>
+          <button className="md:hidden text-on-surface p-2 focus:outline-none" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <span className="material-symbols-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
         </div>
+        {/* Mobile Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-surface-dim border-b border-surface-stroke absolute w-full left-0 top-full flex flex-col font-label-caps text-label-caps shadow-lg pb-6">
+            <a className="text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors border-b border-surface-stroke/50" href="#about" onClick={() => setIsMobileMenuOpen(false)}>Chi sono</a>
+            <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors border-b border-surface-stroke/50" href="#experience" onClick={() => setIsMobileMenuOpen(false)}>Esperienza</a>
+            <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors border-b border-surface-stroke/50" href="#projects" onClick={() => setIsMobileMenuOpen(false)}>Progetti</a>
+            <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors border-b border-surface-stroke/50" href="#skills" onClick={() => setIsMobileMenuOpen(false)}>Competenze</a>
+            <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors" href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Contatti</a>
+            <div className="px-margin-mobile pt-4">
+              <a className="inline-flex bg-primary text-on-primary px-6 py-3 rounded hover:bg-opacity-90 transition-all items-center gap-2 justify-center w-full" href={cvPdfUrl} target="_blank" rel="noopener noreferrer">
+                <span className="material-symbols-outlined text-[18px]">download</span> Scarica Curriculum
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       <main className="pt-12 md:pt-16 pb-section-gap">
