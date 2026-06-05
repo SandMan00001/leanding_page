@@ -23,3 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 \n# RPA Session Data\nrpa_agent/session_data\nplaywright-report/\ntest-results/\n
+\n# Cartella Documentazione Interna\nspiegazioni/
