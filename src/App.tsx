@@ -248,8 +248,8 @@ function App() {
             <p className="font-body-md text-body-md text-text-muted">
               Attualmente aperto a discussioni su ruoli legati a infrastrutture mission-critical e sicurezza. Basato a Vigevano, Italia (23 anni), disponibile per collaborazioni da remoto o ibride.
             </p>
-            <a className="inline-flex bg-on-surface text-surface-dim px-8 py-4 rounded font-label-caps text-label-caps hover:bg-opacity-90 transition-all items-center gap-2" href="mailto:contact@example.com">
-              <span className="material-symbols-outlined text-[18px]">mail</span> Invia Messaggio Crittografato
+            <a className="inline-flex bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps hover:bg-opacity-90 transition-all items-center gap-2" href="./cv.pdf" target="_blank" rel="noopener noreferrer">
+              <span className="material-symbols-outlined text-[18px]">download</span> Scarica il mio CV
             </a>
           </div>
         </section>
