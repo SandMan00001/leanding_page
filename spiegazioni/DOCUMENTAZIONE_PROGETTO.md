@@ -136,9 +136,9 @@ Poi, abbiamo esplicitamente informato il compilatore della sua esistenza:
 ```mermaid
 graph LR
     A[File Fisico: src/assets/cv.pdf] --> B(Compilatore Vite)
-    C[Codice: import cvPdfUrl from './assets/cv.pdf'] --> B
+    C["Codice: import cvPdfUrl..."] --> B
     B --> D[Output Dist: dist/assets/cv-7Bxy9.pdf]
-    B --> E[Codice Trasformato: <a href="/assets/cv-7Bxy9.pdf">]
+    B --> E["Codice Trasformato: href=/assets/cv-7Bxy9.pdf"]
     
     style B fill:#bd34fe,stroke:#333,stroke-width:2px,color:#fff
 ```
