@@ -53,8 +53,8 @@ function App() {
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#skills">Competenze</a>
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#contact">Contatti</a>
           </div>
-          <a className="hidden md:inline-flex bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container" href={cvPdfUrl} target="_blank" rel="noopener noreferrer">
-            <span className="material-symbols-outlined text-[18px]">download</span> Curriculum
+          <a className="hidden md:inline-flex bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container" href="mailto:gabriele.saija.2003@gmail.com">
+            <span className="material-symbols-outlined text-[18px]">mail</span> Contattami
           </a>
           {/* Mobile Menu Button */}
           <button className="md:hidden text-on-surface p-2 focus:outline-none" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -70,8 +70,8 @@ function App() {
             <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors border-b border-surface-stroke/50" href="#skills" onClick={() => setIsMobileMenuOpen(false)}>Competenze</a>
             <a className="text-text-muted hover:text-on-surface hover:bg-surface-elevated px-margin-mobile py-4 transition-colors" href="#contact" onClick={() => setIsMobileMenuOpen(false)}>Contatti</a>
             <div className="px-margin-mobile pt-4">
-              <a className="inline-flex bg-primary text-on-primary px-6 py-3 rounded hover:bg-opacity-90 transition-all items-center gap-2 justify-center w-full" href={cvPdfUrl} target="_blank" rel="noopener noreferrer">
-                <span className="material-symbols-outlined text-[18px]">download</span> Scarica Curriculum
+              <a className="inline-flex bg-primary text-on-primary px-6 py-3 rounded hover:bg-opacity-90 transition-all items-center gap-2 justify-center w-full" href="mailto:gabriele.saija.2003@gmail.com">
+                <span className="material-symbols-outlined text-[18px]">mail</span> Contattami
               </a>
             </div>
           </div>
@@ -219,7 +219,7 @@ function App() {
         <section className="max-w-container-max mx-auto px-margin-mobile md:px-gutter py-section-gap border-t border-surface-stroke" id="experience">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
             <div className="col-span-1 md:col-span-4">
-              <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-4">Esperienza Professionale</h2>
+              <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-4">Esperienze sul Campo</h2>
               <p className="font-label-caps text-label-caps text-primary">04 / DEPLOYMENT</p>
             </div>
             <div className="col-span-1 md:col-span-8 space-y-16">
@@ -265,8 +265,8 @@ function App() {
             <p className="font-body-md text-body-md text-text-muted">
               Attualmente aperto a discussioni su ruoli legati a infrastrutture mission-critical e sicurezza. Residente a Vigevano(PV), Italia (23 anni), disponibile per collaborazioni da remoto o ibride.
             </p>
-            <a className="inline-flex bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps hover:bg-opacity-90 transition-all items-center gap-2" href={cvPdfUrl} target="_blank" rel="noopener noreferrer">
-              <span className="material-symbols-outlined text-[18px]">download</span> Scarica il mio CV
+            <a className="inline-flex bg-primary text-on-primary px-8 py-4 rounded font-label-caps text-label-caps hover:bg-opacity-90 transition-all items-center gap-2" href="mailto:gabriele.saija.2003@gmail.com">
+              <span className="material-symbols-outlined text-[18px]">mail</span> Contattami
             </a>
           </div>
         </section>
