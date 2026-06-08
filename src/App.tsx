@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import profileData from './data/profile.json';
-import cvPdfUrl from './assets/cv.pdf';
 
 interface Repo {
   id: number;
