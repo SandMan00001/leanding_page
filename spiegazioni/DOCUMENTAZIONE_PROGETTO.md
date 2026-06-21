@@ -8,10 +8,11 @@
 1. [Introduzione: La Filosofia del Progetto](#1-introduzione-la-filosofia-del-progetto)
 2. [Architettura Dati: Il Decoupling](#2-architettura-dati-il-decoupling-disaccoppiamento)
 3. [L'Integrazione RPA: Un Bot che legge LinkedIn](#3-lintegrazione-rpa-un-bot-che-legge-linkedin)
-4. [Storie dalla Trincea: Troubleshooting Estremo](#4-storie-dalla-trincea-troubleshooting-estremo)
-5. [La Continuous Integration / Deployment (CI/CD)](#5-la-continuous-integration--deployment-cicd)
-6. [Conclusione](#6-conclusione)
-7. [Wiki & Glossario dei Termini](#7-wiki--glossario-dei-termini)
+4. [Internazionalizzazione (i18n): Google Translate Client-Side](#4-internazionalizzazione-i18n-google-translate-client-side)
+5. [Storie dalla Trincea: Troubleshooting Estremo](#5-storie-dalla-trincea-troubleshooting-estremo)
+6. [La Continuous Integration / Deployment (CI/CD)](#6-la-continuous-integration--deployment-cicd)
+7. [Conclusione](#7-conclusione)
+8. [Wiki & Glossario dei Termini](#8-wiki--glossario-dei-termini)
 
 ---
 
@@ -247,7 +248,171 @@ for (const card of jobCards) {
 
 L'uso oculato dei `locator` concatenati funziona esattamente come un imbuto: stringe progressivamente il raggio di ricerca (partendo dallo scatolone gigante `section`, passando per la lista `li`, fino ad arrivare alla minuscola scritta nello `span`). Trasforma così la complessa grafica di un sito web in una tabella di dati ordinata e pulita, pronta per essere usata dalla nostra web app!
 
-### 3.6. Il Flusso Completo CI/CD: Dall'Agente alla Produzione
+### 3.6. Laboratorio Interattivo: Il Codice Sorgente e la Sfida del Professore
+
+Ora che abbiamo compreso la teoria e le metafore, è il momento di guardare in faccia il codice vero e proprio. Questo è il contenuto integrale del nostro file `sync_linkedin.js`. Leggetelo con attenzione.
+
+<details>
+<summary>💻 Clicca qui per espandere il codice sorgente completo di <code>sync_linkedin.js</code></summary>
+
+```javascript
+const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+const PROFILE_JSON_PATH = path.join(__dirname, '../src/data/profile.json');
+const profileUrl = process.argv[2] || 'https://www.linkedin.com/in/gabriele-saija-5b8325202';
+
+async function run() {
+  console.log(`🚀 Avvio dell'RPA Agent per il profilo: ${profileUrl}`);
+  
+  const userDataDir = path.join(__dirname, 'session_data');
+  const browserContext = await chromium.launchPersistentContext(userDataDir, {
+    headless: false,
+    viewport: { width: 1280, height: 800 }
+  });
+
+  const page = await browserContext.newPage();
+  
+  console.log('📡 Navigazione verso LinkedIn...');
+  await page.goto(profileUrl, { waitUntil: 'domcontentloaded' });
+
+  const isLoginPage = await page.getByRole('heading', { name: /Sign in|Accedi/i }).count() > 0 || page.url().includes('login');
+  if (isLoginPage) {
+    console.log('⚠️ Richiesto Login. Per favore, fai il login manualmente nel browser aperto.');
+    console.log('⏳ In attesa che il login venga completato... (Il bot riprenderà quando sarai sul tuo profilo)');
+    
+    await page.waitForURL(/.*linkedin\.com\/in\/.*/, { timeout: 0 });
+    console.log('✅ Login rilevato con successo! Riprendo lo scraping...');
+  }
+
+  await page.waitForTimeout(3000);
+  
+  const extractedData = {
+    skills: {
+      infrastructure: [],
+      security: []
+    },
+    experience: []
+  };
+
+  try {
+    console.log('🔎 Estrazione delle Esperienze (Logica Semantica)...');
+    
+    const experienceSection = page.locator('section').filter({ has: page.getByRole('heading', { name: /Experience|Esperienza/i }) }).first();
+    
+    if (await experienceSection.count() > 0) {
+        const jobItems = experienceSection.locator('li');
+        const jobCount = await jobItems.count();
+        
+        console.log(`Trovati ${jobCount} possibili blocchi esperienza. Ne leggo un massimo di 3.`);
+        
+        for (let i = 0; i < Math.min(jobCount, 3); i++) {
+            const item = jobItems.nth(i);
+            const textContent = await item.innerText();
+            const lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            if (lines.length >= 2) {
+                extractedData.experience.push({
+                    role: lines[0],
+                    company: lines[1].replace(/·.*$/, '').trim(),
+                    duration: lines[2] ? lines[2].split('·')[0].trim() : "",
+                    description: lines.slice(3).join(' ') || "Nessuna descrizione."
+                });
+            }
+        }
+    } else {
+        console.log('⚠️ Sezione Esperienza non trovata, mantengo il template di fallback.');
+    }
+
+    console.log('🔎 Estrazione delle Competenze...');
+    const skillsSection = page.locator('section').filter({ has: page.getByRole('heading', { name: /Skills|Competenze/i }) }).first();
+    
+    if (await skillsSection.count() > 0) {
+        const skillItems = skillsSection.locator('li');
+        const skillCount = await skillItems.count();
+        
+        console.log(`Trovate ${skillCount} competenze. Le divido...`);
+        for (let i = 0; i < skillCount; i++) {
+            const skillText = await skillItems.nth(i).innerText();
+            const cleanSkill = skillText.split('\n')[0].trim();
+            
+            if (/aws|cloud|docker|kubernetes|linux|terraform|git/i.test(cleanSkill)) {
+                extractedData.skills.infrastructure.push(cleanSkill);
+            } else if (/security|iso|gdpr|hacking|audit|cyber/i.test(cleanSkill)) {
+                extractedData.skills.security.push(cleanSkill);
+            } else {
+                extractedData.skills.infrastructure.push(cleanSkill);
+            }
+        }
+    }
+
+    if (extractedData.experience.length === 0) {
+        console.log('⚠️ Scraping troppo complesso o anti-bot in azione. Scrivo i dati di default per salvaguardare il sito.');
+        extractedData.experience = [
+            {
+              "role": "DevOps Engineer",
+              "company": "beSharp",
+              "duration": "Presente",
+              "description": "Progettazione e manutenzione di infrastrutture cloud-native. Implementazione di workflow GitOps e garanzia di alta affidabilità per sistemi mission-critical."
+            },
+            {
+              "role": "Tech Educator",
+              "company": "Coding Giants",
+              "duration": "",
+              "description": "Traduzione di concetti di programmazione complessi in moduli facilmente comprensibili per gli studenti. Promozione della prossima generazione di talenti tecnici."
+            }
+        ];
+        extractedData.skills.infrastructure = ["Terraform", "Kubernetes", "AWS", "ArgoCD", "Docker", "Linux", "GitOps"];
+        extractedData.skills.security = ["ISO 27001", "GDPR", "Ethical Hacking", "System Audit"];
+    }
+
+    fs.writeFileSync(PROFILE_JSON_PATH, JSON.stringify(extractedData, null, 2));
+    console.log(`✅ Estrazione completata. File ${PROFILE_JSON_PATH} aggiornato con successo!`);
+    console.log('🎉 Il sito React si auto-aggiornerà istantaneamente in locale grazie a Vite.');
+
+  } catch (err) {
+      console.error('❌ Errore durante l\'RPA:', err);
+  } finally {
+      await browserContext.close();
+  }
+}
+
+run();
+```
+</details>
+
+**Spiegazione passo-passo del flusso di esecuzione:**
+1. **Setup e Persistenza (`launchPersistentContext`):** Nelle primissime righe impostiamo i percorsi. A differenza del normale `newContext()`, questo salva fisicamente i cookie in una cartella locale (`session_data`). Questo ci permette di fare il login manualmente una sola volta se necessario, e poi il bot userà la sessione salvata per le esecuzioni future!
+2. **Controllo Login Intelligente (`isLoginPage`):** Il bot verifica se la pagina contiene la parola "Sign in" o "Accedi" (`page.getByRole(...)`). Se sì, mette in pausa l'esecuzione (`waitForURL`) finché l'utente non fa il login manuale. Non cerca mai di forzare password in automatico!
+3. **Estrazione Esperienze:** Usa il filtro semantico che abbiamo studiato. Se trova la sezione, estrae un massimo di 3 esperienze lavorative (`Math.min(jobCount, 3)`). Suddivide il testo estratto per "a capo" (`\n`) sapendo empiricamente che la prima riga è il ruolo e la seconda è l'azienda.
+4. **Estrazione e Suddivisione Competenze:** Cerca la sezione "Skills". Una volta prese, usa le espressioni regolari (Regex, es. `/aws|cloud|docker/i`) per "smistare" intelligentemente la competenza nella categoria "Infrastruttura" o "Sicurezza".
+5. **Fallback Anti-Bot (Piano B):** L'ingegneria del software non è sperare che tutto vada bene, ma prevedere che andrà male. Se LinkedIn blocca il bot (ed estrae 0 esperienze), il bot inietta automaticamente dei "dati fittizi" validi per far sì che la build React in CI/CD non fallisca mai, evitando che il sito vada offline.
+6. **Scrittura JSON:** Infine, usa il modulo `fs` di Node per sovrascrivere fisicamente `profile.json` nel progetto React.
+
+---
+
+#### 👨‍🏫 La Sfida del Professore (Esercizio Pratico)
+
+Questo è il momento in cui vi trasformate da studenti a ingegneri. Il codice sopra funziona perfettamente per LinkedIn, ma nel mondo reale vi chiederanno di integrarlo ovunque. Non limitatevi al "copia-incolla".
+
+**Scenario della Sfida:** Il vostro cliente non usa LinkedIn, ma ha tutte le sue competenze scritte su un blog personale molto scarno, strutturato semplicemente con un elenco puntato.
+
+**Obiettivo:** Voglio che replichiate la logica del nostro bot RPA da zero. Create un nuovo script chiamato `sfida_blog.js` che fa le seguenti azioni in sequenza:
+1. Inizializza un browser in modalità *headless* (invisibile).
+2. Naviga all'indirizzo `https://example.com`.
+3. Trova **tutte le intestazioni H1** della pagina.
+4. Estrae il testo puro di ciascuna intestazione e lo stampa sul terminale.
+
+**Domande Guida per sbloccare la logica (da risolvere da soli):**
+- *Quale metodo usate per lanciare il browser se non vi interessano i cookie persistenti?* (Sbirciate il primissimo esempio di codice nella sezione 3.2!)
+- *Come dite al pilota bendato di isolare solo i tag di tipo intestazione (H1)?* (Pensate ai selettori come `locator('h1')`).
+- *Se avete trovato 5 titoli, come fate a estrarre il testo da ognuno senza che il bot si confonda?* (Dovrete usare il comando magico `.all()` e poi il ciclo `for` unito a `evaluate`, esattamente come nel bot di LinkedIn).
+
+Prendete carta e penna, buttate giù la logica a frecce (Browser ➔ Page ➔ Locator ➔ Evaluate). Poi aprite VS Code e scrivetelo. Lancerete il bot, magari si schianterà con un errore rosso, leggerete l'errore, capirete dove la "radio" ha perso il segnale, e lo correggerete. 
+L'ingegneria si impara risolvendo i problemi, non evitandoli. Buon lavoro!
+
+### 3.7. Il Flusso Completo CI/CD: Dall'Agente alla Produzione
 
 Ora avete un bot perfetto sulla vostra macchina. Ma un RPA non ha senso se dovete lanciarlo voi a mano. Il nostro traguardo finale è l'automazione DevOps totale tramite **GitHub Actions**.
 
@@ -292,7 +457,343 @@ Tutto questo accade mentre voi state tranquillamente dormendo.
 
 ---
 
-## 4. Storie dalla Trincea: Troubleshooting Estremo
+## 4. Internazionalizzazione (i18n): Google Translate Client-Side
+
+Cari studenti, l'internazionalizzazione (i18n) è un tassello cruciale in un'architettura enterprise. Spesso, per tradurre un sito web in diverse lingue, gli sviluppatori configurano sistemi complessi come `react-i18next` che richiedono la traduzione manuale di centinaia di righe di testo all'interno di file JSON di dizionario (`it.json`, `en.json`, ecc.).
+
+Sebbene l'approccio manuale offra il massimo controllo sul tono e sulle sfumature, richiede una manutenzione enorme. Nel nostro portfolio personale, abbiamo implementato un approccio **ibrido ad alta efficienza**:
+1. Utilizziamo lo script ufficiale client-side di **Google Translate** per tradurre dinamicamente l'intera pagina in oltre 100 lingue.
+2. Nascondiamo completamente i widget nativi e invasivi (banner superiori, frecce standard, tooltip sgradevoli) tramite CSS personalizzato.
+3. Progettiamo un selettore di lingua **in stile Glassmorphism** integrato direttamente nella Navbar.
+4. Salviamo la scelta della lingua in modo persistente nei Cookie, così che rimanga attiva durante la navigazione o le visite successive.
+
+### 4.1. L'Architettura del Traduttore Client-Side
+
+Il caricamento del traduttore avviene in modalità asincrona e non bloccante. Di seguito lo schema di flusso:
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant App as React App (LanguageSelector)
+    participant GT as Script Google Translate
+    participant Cookies as Cookie 'googtrans'
+
+    Browser->>App: Caricamento Pagina
+    App->>Cookies: Legge lo stato della lingua salvata (es. /it/en)
+    App->>GT: Iniezione asincrona dello script translate.google.com
+    Note over GT: Il callback init aggancia il div nascosto<br/>#google_translate_element
+    GT-->>Browser: Traduzione automatica dei nodi di testo del DOM
+    Note over App: dropdown in stile Glassmorphic<br/>aggiorna i cookie al click
+```
+
+### 4.2. Il Codice del Componente Selettore: `LanguageSelector.tsx`
+
+Abbiamo creato il file `src/components/LanguageSelector.tsx`. Questo componente si occupa di due cose fondamentali: caricare lo script di traduzione all'avvio e modificare il cookie `googtrans` per innescare la traduzione da parte del motore di Google.
+
+Ecco il codice completo del componente:
+
+```typescript
+import { useState, useEffect, useRef } from 'react';
+import { Globe, ChevronDown } from 'lucide-react';
+
+declare global {
+  interface Window {
+    googleTranslateElementInit: () => void;
+    google: any;
+  }
+}
+
+const LANGUAGES = [
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'af', name: 'Afrikaans', flag: '🇿🇦' },
+  { code: 'sq', name: 'Shqip (Albanese)', flag: '🇦🇱' },
+  { code: 'am', name: 'Amharic', flag: '🇪🇹' },
+  { code: 'ar', name: 'العربية (Arabo)', flag: '🇸🇦' },
+  { code: 'hy', name: 'Հайերեն (Armeno)', flag: '🇦🇲' },
+  { code: 'az', name: 'Azərbaycanca (Azerbaigiano)', flag: '🇦🇿' },
+  { code: 'eu', name: 'Euskara (Basco)', flag: '🇪🇸' },
+  { code: 'be', name: 'Беларуская (Bielorusso)', flag: '🇧🇾' },
+  { code: 'bn', name: 'বাংলা (Bengalese)', flag: '🇧🇩' },
+  { code: 'bs', name: 'Bosanski (Bosniaco)', flag: '🇧🇦' },
+  { code: 'bg', name: 'Български (Bulgaro)', flag: '🇧🇬' },
+  { code: 'ca', name: 'Català (Catalano)', flag: '🇪🇸' },
+  { code: 'zh-CN', name: '简体中文 (Cinese Semp.)', flag: '🇨🇳' },
+  { code: 'zh-TW', name: '繁體中文 (Cinese Trad.)', flag: '🇹🇼' },
+  { code: 'co', name: 'Corsu (Corso)', flag: '🇫🇷' },
+  { code: 'hr', name: 'Hrvatski (Croato)', flag: '🇭🇷' },
+  { code: 'cs', name: 'Čeština (Ceco)', flag: '🇨🇿' },
+  { code: 'da', name: 'Dansk (Danese)', flag: '🇩🇰' },
+  { code: 'nl', name: 'Nederlands (Olandese)', flag: '🇳🇱' },
+  { code: 'en', name: 'English (Inglese)', flag: '🇬🇧' },
+  { code: 'eo', name: 'Esperanto', flag: '🇪🇺' },
+  { code: 'et', name: 'Eesti (Estone)', flag: '🇪🇪' },
+  { code: 'fi', name: 'Suomi (Finlandese)', flag: '🇫🇮' },
+  { code: 'fr', name: 'Français (Francese)', flag: '🇫🇷' },
+  { code: 'fy', name: 'Frysk (Frisone)', flag: '🇳🇱' },
+  { code: 'gl', name: 'Galego (Galiziano)', flag: '🇪🇸' },
+  { code: 'ka', name: 'ქართული (Georgiano)', flag: '🇬🇪' },
+  { code: 'de', name: 'Deutsch (Tedesco)', flag: '🇩🇪' },
+  { code: 'el', name: 'Ελληνικά (Greco)', flag: '🇬🇷' },
+  { code: 'gu', name: 'ગુજરાતી (Gujarati)', flag: '🇮🇳' },
+  { code: 'ht', name: 'Kreyòl Ayisyen (Creolo)', flag: '🇭🇹' },
+  { code: 'ha', name: 'Hausa', flag: '🇳🇬' },
+  { code: 'haw', name: 'Hawaiʻi (Hawaiano)', flag: '🇺🇸' },
+  { code: 'he', name: 'עברית (Ebraico)', flag: '🇮🇱' },
+  { code: 'hi', name: 'हिन्दी (Hindi)', flag: '🇮🇳' },
+  { code: 'hu', name: 'Magyar (Ungherese)', flag: '🇭🇺' },
+  { code: 'is', name: 'Íslenska (Islandese)', flag: '🇮🇸' },
+  { code: 'ig', name: 'Igbo', flag: '🇳🇬' },
+  { code: 'id', name: 'Bahasa Indonesia (Indonesiano)', flag: '🇮🇩' },
+  { code: 'ga', name: 'Gaeilge (Irlandese)', flag: '🇮🇪' },
+  { code: 'ja', name: '日本語 (Giapponese)', flag: '🇯🇵' },
+  { code: 'jw', name: 'Javanese', flag: '🇮🇩' },
+  { code: 'kn', name: 'ಕನ್ನಡ (Kannada)', flag: '🇮🇳' },
+  { code: 'kk', name: 'Қазақша (Kazako)', flag: '🇰🇿' },
+  { code: 'km', name: 'ខ្មែរ (Khmer)', flag: '🇰🇭' },
+  { code: 'ko', name: '한국어 (Coreano)', flag: '🇰🇷' },
+  { code: 'ku', name: 'Kurdî (Curdo)', flag: '🇮🇶' },
+  { code: 'ky', name: 'Кыргызча (Kirghiso)', flag: '🇰🇬' },
+  { code: 'lo', name: 'ລາວ (Lao)', flag: '🇱🇦' },
+  { code: 'la', name: 'Latina (Latino)', flag: '🇻🇦' },
+  { code: 'lv', name: 'Latviešu (Lettone)', flag: '🇱🇻' },
+  { code: 'lt', name: 'Lietuvių (Lituano)', flag: '🇱🇹' },
+  { code: 'lb', name: 'Lëtzebuergesch', flag: '🇱🇺' },
+  { code: 'mk', name: 'Македонски (Macedone)', flag: '🇲🇰' },
+  { code: 'mg', name: 'Malagasy (Malgascio)', flag: '🇲🇬' },
+  { code: 'ms', name: 'Bahasa Melayu (Malese)', flag: '🇲🇾' },
+  { code: 'ml', name: 'മലയാളം (Malayalam)', flag: '🇮🇳' },
+  { code: 'mt', name: 'Malti (Maltese)', flag: '🇲🇹' },
+  { code: 'mi', name: 'Māori', flag: '🇳🇿' },
+  { code: 'mr', name: 'मराठी (Marathi)', flag: '🇮🇳' },
+  { code: 'mn', name: 'Монгол (Mongolo)', flag: '🇲🇳' },
+  { code: 'ne', name: 'नेपाली (Nepalese)', flag: '🇳🇵' },
+  { code: 'no', name: 'Norsk (Norvegese)', flag: '🇳🇴' },
+  { code: 'fa', name: 'فارسی (Persiano)', flag: '🇮🇷' },
+  { code: 'pl', name: 'Polski (Polacco)', flag: '🇵🇱' },
+  { code: 'pt', name: 'Português (Portoghese)', flag: '🇵🇹' },
+  { code: 'pa', name: 'ਪੰਜਾਬੀ (Punjabi)', flag: '🇮🇳' },
+  { code: 'ro', name: 'Română (Rumeno)', flag: '🇷🇴' },
+  { code: 'ru', name: 'Русский (Russo)', flag: '🇷🇺' },
+  { code: 'sm', name: 'Samoan (Samoano)', flag: '🇼🇸' },
+  { code: 'gd', name: 'Gàidhlig (Gaelico Sc.)', flag: '🇬🇧' },
+  { code: 'sr', name: 'Српски (Serbo)', flag: '🇷🇸' },
+  { code: 'st', name: 'Sesotho', flag: '🇱🇸' },
+  { code: 'sn', name: 'Shona', flag: '🇿🇼' },
+  { code: 'sd', name: 'Sindhi', flag: '🇵🇰' },
+  { code: 'si', name: 'සිංහල (Singalese)', flag: '🇱🇰' },
+  { code: 'sk', name: 'Slovenčina (Slovacco)', flag: '🇸🇰' },
+  { code: 'sl', name: 'Slovenščina (Sloveno)', flag: '🇸🇮' },
+  { code: 'so', name: 'Somali (Somalo)', flag: '🇸🇴' },
+  { code: 'es', name: 'Español (Spagnolo)', flag: '🇪🇸' },
+  { code: 'su', name: 'Sundanese', flag: '🇮🇩' },
+  { code: 'sw', name: 'Kiswahili (Swahili)', flag: '🇰🇪' },
+  { code: 'sv', name: 'Svenska (Svedese)', flag: '🇸🇪' },
+  { code: 'tg', name: 'Тоҷикӣ (Tagico)', flag: '🇹🇯' },
+  { code: 'ta', name: 'தமிழ் (Tamil)', flag: '🇮🇳' },
+  { code: 'te', name: 'తెలుగు (Telugu)', flag: '🇮🇳' },
+  { code: 'th', name: 'ไทย (Thai)', flag: '🇹🇭' },
+  { code: 'tr', name: 'Türkçe (Turco)', flag: '🇹🇷' },
+  { code: 'uk', name: 'Українська (Ucraino)', flag: '🇺🇦' },
+  { code: 'ur', name: 'اردو (Urdu)', flag: '🇵🇰' },
+  { code: 'uz', name: 'Oʻzbekcha (Uzbeko)', flag: '🇺🇿' },
+  { code: 'vi', name: 'Tiếng Việt (Vietnamese)', flag: '🇻🇳' },
+  { code: 'cy', name: 'Cymraeg (Gallese)', flag: '🇬🇧' },
+  { code: 'xh', name: 'IsiXhosa (Xhosa)', flag: '🇿🇦' },
+  { code: 'yi', name: 'ייִדיש (Yiddish)', flag: '🇮🇱' },
+  { code: 'yo', name: 'Yorùbá', flag: '🇳🇬' },
+  { code: 'zu', name: 'isiZulu (Zulu)', flag: '🇿🇦' }
+];
+
+export function LanguageSelector() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentLang, setCurrentLang] = useState('it');
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Chiude il dropdown in caso di clic all'esterno
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Inizializza il traduttore e recupera la lingua attiva dai cookie
+  useEffect(() => {
+    const getActiveLang = () => {
+      const match = document.cookie.match(/googtrans=([^;]+)/);
+      if (match) {
+        const val = decodeURIComponent(match[1]);
+        const parts = val.split('/');
+        const lang = parts[parts.length - 1];
+        return lang || 'it';
+      }
+      return 'it';
+    };
+
+    setCurrentLang(getActiveLang());
+
+    if (!document.getElementById('google-translate-script')) {
+      const script = document.createElement('script');
+      script.id = 'google-translate-script';
+      script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    // Configurato per supportare TUTTE le lingue del mondo (rimossa la chiave includedLanguages)
+    window.googleTranslateElementInit = () => {
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: 'it',
+          layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false,
+        },
+        'google_translate_element'
+      );
+    };
+  }, []);
+
+  const handleLanguageChange = (langCode: string) => {
+    const cookieValue = langCode === 'it' ? '' : `/it/${langCode}`;
+    
+    // Rimuove i vecchi cookie su domini differenti per evitare conflitti
+    const domains = [
+      '',
+      window.location.hostname,
+      `.${window.location.hostname}`,
+      `.${window.location.hostname.split('.').slice(-2).join('.')}`,
+    ];
+
+    domains.forEach(domain => {
+      const domainStr = domain ? `; domain=${domain}` : '';
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainStr}`;
+    });
+
+    if (cookieValue) {
+      // Imposta il cookie googtrans per attivare la traduzione automatica
+      document.cookie = `googtrans=${cookieValue}; path=/;`;
+      document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}`;
+      document.cookie = `googtrans=${cookieValue}; path=/; domain=.${window.location.hostname.replace(/^www\./, '')}`;
+    }
+
+    setCurrentLang(langCode);
+    setIsOpen(false);
+    window.location.reload();
+  };
+
+  const activeLanguage = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+
+  const filteredLanguages = LANGUAGES.filter(lang =>
+    lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lang.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="relative notranslate" ref={dropdownRef}>
+      <button
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearchQuery(''); // Reimposta la barra di ricerca alla riapertura
+        }}
+        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-high/40 hover:bg-surface-container-high/70 border border-surface-stroke backdrop-blur-md text-on-surface hover:text-white transition-all duration-300 font-label-caps text-label-caps cursor-pointer shadow-sm"
+      >
+        <Globe className="w-4 h-4 text-primary shrink-0 animate-pulse" />
+        <span>{activeLanguage.flag} {activeLanguage.name}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-text-muted transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 rounded-lg bg-surface-container/95 border border-surface-stroke backdrop-blur-md shadow-2xl z-[100] flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="p-2 border-b border-surface-stroke">
+            <input
+              type="text"
+              placeholder="Cerca lingua..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs rounded border border-surface-stroke bg-surface-container-high/40 text-on-surface focus:outline-none focus:border-primary placeholder-text-muted"
+            />
+          </div>
+          <ul className="max-h-60 overflow-y-auto py-1">
+            {filteredLanguages.length > 0 ? (
+              filteredLanguages.map(lang => (
+                <li key={lang.code}>
+                  <button
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={`w-full text-left px-4 py-2 hover:bg-primary-container hover:text-white transition-all duration-200 flex items-center justify-between text-sm ${
+                      currentLang === lang.code ? 'text-primary font-bold bg-surface-container-highest/20' : 'text-on-surface'
+                    }`}
+                  >
+                    <span>{lang.flag} {lang.name}</span>
+                    {currentLang === lang.code && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    )}
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-4 py-3 text-xs text-text-muted text-center">Nessuna lingua trovata</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 4.3. Bypass dei Jump di Layout e Widget Hiding tramite CSS
+
+Se vi limitate ad incollare lo script di Google Translate, noterete due grossi difetti grafici:
+1. Google inietta una barra di traduzione gigante in cima alla pagina che sposta l'intero layout del sito verso il basso di 40 pixel (Layout Shift).
+2. Mostra banner pubblicitari di traduzione, tooltip al passaggio del mouse sopra i testi tradotti e bordi evidenziatori di colore blu/giallo.
+
+Per ovviare a ciò, abbiamo inserito delle regole CSS mirate all'interno di `src/index.css` per nascondere tutti gli elementi estranei e forzare la visualizzazione del body al pixel originale:
+
+```css
+/* Nasconde il widget originale di Google */
+#google_translate_element {
+  display: none !important;
+}
+
+/* Evita che Google sposti il body verso il basso di 40px */
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+/* Nasconde il banner originale di Google Translate (in alto) */
+.goog-te-banner-frame, iframe.goog-te-banner-frame {
+  display: none !important;
+}
+
+/* Nasconde la barra di aiuto di Google */
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* Impedisce al browser di visualizzare i popup o gli highlight della traduzione */
+.goog-tooltip, .goog-tooltip:hover, .goog-text-highlight {
+  display: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+```
+
+### 4.4. Regola d'Oro per Evitare Traduzioni Indesiderate
+
+Alcuni elementi (come i nomi propri, i loghi, i linguaggi di programmazione, o la lista delle lingue stessa) non devono mai essere tradotti. Google Translate rispetta una classe CSS speciale:
+* Se aggiungete la classe **`notranslate`** a qualsiasi tag HTML, il motore di Google Translate lascerà intatto il testo racchiuso in quell'elemento.
+* Abbiamo applicato questa classe al contenitore del nostro dropdown delle lingue (per evitare che i nomi "Italiano, Español, Deutsch" venissero tradotti in altre lingue dal bot) e al logo del brand.
+
+---
+
+## 5. Storie dalla Trincea: Troubleshooting Estremo
+
 
 Durante lo sviluppo in aula (e in produzione!) abbiamo incontrato 4 grossi problemi. Ecco come ci siamo arrivati e come li abbiamo smontati analiticamente.
 
@@ -345,7 +846,7 @@ Abbiamo introdotto l'hook `useState(false)`. Il bottone è diventato reattivo, c
 
 ---
 
-## 5. La Continuous Integration / Deployment (CI/CD)
+## 6. La Continuous Integration / Deployment (CI/CD)
 
 Il vero DevOps non fa le cose a mano due volte. Abbiamo configurato due pipeline su GitHub Actions, orchestrate per lavorare in totale sintonia:
 
@@ -368,7 +869,7 @@ Il risultato? Il portfolio è un vero ecosistema vivente, che si mantiene aggior
 
 ---
 
-## 6. Conclusione
+## 7. Conclusione
 
 Ragazzi, questa landing page è un capolavoro di orchestrazione. Non guardatela come una vetrina di testo e colori, ma come un assemblaggio di Node.js, automazione browser, build tools avanzati e pipeline cloud. Mantenete sempre la mentalità da ingegneri: scovate il problema nei DevTools, leggete i log della build, disaccoppiate i dati dalla UI e automatizzate tutto il possibile.
 
@@ -376,7 +877,7 @@ Buono studio.
 
 ---
 
-## 7. Wiki & Glossario dei Termini
+## 8. Wiki & Glossario dei Termini
 
 Per assicurarci di parlare tutti la stessa lingua tecnica, ecco il vocabolario fondamentale del progetto:
 

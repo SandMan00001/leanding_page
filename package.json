@@ -11,6 +11,7 @@
     "sync-linkedin": "node rpa_agent/sync_linkedin.js"
   },
   "dependencies": {
+    "lucide-react": "^1.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

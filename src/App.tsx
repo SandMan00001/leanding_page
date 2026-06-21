@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import profileData from './data/profile.json';
+import { LanguageSelector } from './components/LanguageSelector';
+
 
 interface Repo {
   id: number;
@@ -52,13 +54,19 @@ function App() {
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#skills">Competenze</a>
             <a className="text-text-muted hover:text-on-surface transition-colors" href="#contact">Contatti</a>
           </div>
-          <a className="hidden md:inline-flex bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container" href="mailto:gabriele.saija.2003@gmail.com">
-            <span className="material-symbols-outlined text-[18px]">mail</span> Contattami
-          </a>
-          {/* Mobile Menu Button */}
-          <button className="md:hidden text-on-surface p-2 focus:outline-none" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            <span className="material-symbols-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
-          </button>
+          <div className="hidden md:flex gap-4 items-center">
+            <LanguageSelector />
+            <a className="bg-primary-container text-white px-6 py-3 rounded hover:bg-opacity-90 transition-all font-label-caps text-label-caps items-center gap-2 border border-primary-container inline-flex" href="mailto:gabriele.saija.2003@gmail.com">
+              <span className="material-symbols-outlined text-[18px]">mail</span> Contattami
+            </a>
+          </div>
+          {/* Mobile Menu Button & Language Selector */}
+          <div className="flex md:hidden items-center gap-2">
+            <LanguageSelector />
+            <button className="text-on-surface p-2 focus:outline-none" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <span className="material-symbols-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
+            </button>
+          </div>
         </div>
         {/* Mobile Dropdown */}
         {isMobileMenuOpen && (
@@ -285,6 +293,8 @@ function App() {
           </div>
         </div>
       </footer>
+      {/* Hidden container for Google Translate widget */}
+      <div id="google_translate_element" style={{ display: 'none' }}></div>
     </>
   );
 }

@@ -124,3 +124,37 @@
     -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   }
 }
+
+/* ==========================================
+   GOOGLE TRANSLATE CUSTOMIZATION & BYPASS
+   ========================================== */
+
+/* Nasconde il widget originale di Google */
+#google_translate_element {
+  display: none !important;
+}
+
+/* Evita che Google sposti il body verso il basso di 40px */
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+/* Nasconde il banner originale di Google Translate (in alto) */
+.goog-te-banner-frame, iframe.goog-te-banner-frame {
+  display: none !important;
+}
+
+/* Nasconde la barra di aiuto di Google */
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* Impedisce al browser di visualizzare i popup o gli highlight della traduzione */
+.goog-tooltip, .goog-tooltip:hover, .goog-text-highlight {
+  display: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+
