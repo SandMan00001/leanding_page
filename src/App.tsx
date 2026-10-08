@@ -260,6 +260,31 @@ function App() {
                   </div>
                 </div>
               </div>
+
+              {/* Certificates */}
+              {profileData.certificates && profileData.certificates.length > 0 && (
+                <div className="mt-16 border-t border-surface-stroke pt-12">
+                  <h3 className="font-label-caps text-label-caps text-text-muted mb-8">CERTIFICAZIONI</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {profileData.certificates.map((cert, index) => (
+                      <div key={index} className="bg-surface-container-low border border-surface-stroke rounded-lg overflow-hidden flex flex-col">
+                        {cert.image && (
+                          <div className="w-full aspect-[4/3] bg-surface-dim overflow-hidden">
+                            <img src={cert.image} alt={cert.title} className="w-full h-full object-cover transition-transform hover:scale-105" />
+                          </div>
+                        )}
+                        <div className="p-6 flex-1 flex flex-col">
+                          <h4 className="font-headline-lg-mobile text-[18px] text-on-surface mb-2 leading-tight">{cert.title}</h4>
+                          <div className="mt-auto pt-4 flex justify-between items-center border-t border-surface-stroke">
+                            <span className="font-body-sm text-body-sm text-text-muted">{cert.issuer}</span>
+                            <span className="font-label-caps text-label-caps text-primary">{cert.date}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -1,26 +1,66 @@
 {
   "skills": {
-    "infrastructure": ["Terraform", "Kubernetes", "AWS", "ArgoCD", "Docker", "Linux", "GitOps"],
-    "security": ["ISO 27001", "GDPR", "Ethical Hacking", "System Audit"]
+    "infrastructure": [
+      "Terraform",
+      "Kubernetes",
+      "AWS",
+      "ArgoCD",
+      "Docker",
+      "Linux",
+      "GitOps",
+      "Go (Programming Language)",
+      "TypeScript",
+      "DevOps"
+    ],
+    "security": [
+      "ISO 27001",
+      "GDPR",
+      "Ethical Hacking",
+      "System Audit",
+      "Sonarqube",
+      "Cybersecurity",
+      "OWASP",
+      "Application Security"
+    ]
   },
   "experience": [
     {
+      "role": "DevSecOps Engineer",
+      "company": "Invisiblefarm",
+      "duration": "Lug 2026 - Presente",
+      "description": "Implementazione e gestione della sicurezza in ambito cloud-native e pipeline CI/CD."
+    },
+    {
       "role": "DevOps Engineer",
       "company": "beSharp",
-      "duration": "Presente",
-      "description": "Progettazione e manutenzione di infrastrutture cloud-native. Implementazione di workflow GitOps e garanzia di alta affidabilità per sistemi mission-critical."
+      "duration": "Ott 2025 - Mar 2026",
+      "description": "Progettazione e manutenzione di infrastrutture cloud-native. Utilizzo avanzato di Kubernetes e Terraform."
     },
     {
-      "role": "Tech Educator",
+      "role": "Insegnante",
       "company": "Coding Giants",
-      "duration": "",
-      "description": "Traduzione di concetti di programmazione complessi in moduli facilmente comprensibili per gli studenti. Promozione della prossima generazione di talenti tecnici."
+      "duration": "Giu 2025 - Ott 2025",
+      "description": "Docente freelance. Traduzione di concetti di programmazione complessi in moduli facilmente comprensibili per gli studenti. Promozione della prossima generazione di talenti tecnici."
     },
     {
-      "role": "Amministratore di Sistema",
-      "company": "Comelz",
-      "duration": "",
-      "description": "Gestione dell'infrastruttura IT interna, ottimizzazione delle prestazioni di rete e applicazione dei protocolli di sicurezza di base in tutta l'organizzazione."
+      "role": "Sistemista",
+      "company": "COMELZ",
+      "duration": "Lug 2021 - Ago 2021",
+      "description": "Gestione della componente sistemistica: macchine virtuali, amministrazione sistemi Linux, orchestrazione con Docker, configurazione reti e creazione di portali web con WordPress."
+    }
+  ],
+  "certificates": [
+    {
+      "title": "Application Security - The Complete Guide",
+      "issuer": "Udemy (Derek Fisher)",
+      "date": "Set 2026",
+      "image": "/certificates/app-sec.jpg"
+    },
+    {
+      "title": "OWASP Security Testing of Web, API, Android & Source code app",
+      "issuer": "Udemy (Kumar Gupta)",
+      "date": "Lug 2026",
+      "image": "/certificates/owasp.jpg"
     }
   ]
 }
